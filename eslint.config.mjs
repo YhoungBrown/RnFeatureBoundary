@@ -38,9 +38,27 @@ export default tseslint.config(
           extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
         },
       },
+    },
 
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+
+  // Architecture boundary rules apply only to src/ to keep root
+  // bootstrap and config files outside the enforced boundary model.
+  {
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
+
+    plugins: {
+      boundaries,
+    },
+
+    settings: {
       'boundaries/elements': [
-        // Must be first so index files are classified as public API,not as internal files of the feature folder.
+        // Must be first so index files are classified as public API,
+        // not as internal files of the feature folder.
         {
           type: 'feature-public',
           mode: 'file',
@@ -68,8 +86,6 @@ export default tseslint.config(
     },
 
     rules: {
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
       'boundaries/no-unknown': 'error',
 
       'boundaries/dependencies': [
@@ -117,7 +133,7 @@ export default tseslint.config(
                 },
               },
               message:
-                'Architecture violation: features may depend on other features only through their public API. Feature "{{from.captured.featureName}}" cannot import internal files from feature "{{to.captured.featureName}}". Replace the deep import with an import from src/feature/{{to.captured.featureName}}/index.ts',
+                'Architecture violation: features may depend on other features only through their public API. Feature "{{from.captured.featureName}}" cannot import internal files from feature "{{to.captured.featureName}}". Replace the deep import with an import from src/features/{{to.captured.featureName}}/index.ts',
             },
 
             // A feature can only import from another feature through its public API (index.ts).

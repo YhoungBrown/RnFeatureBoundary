@@ -1,97 +1,237 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# RnFeatureBoundary
 
-# Getting Started
+A **React Native CLI template** that enforces a strict **feature-based architecture** through ESLint rules. Every feature is self-contained under `src/features/<name>/` and exposes a public API via `index.ts`. Other features, shared code, and navigation can only interact through these public boundaries.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## Table of Contents
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- [Installation](#installation)
+- [Architecture Overview](#architecture-overview)
+- [Folder Structure](#folder-structure)
+- [Boundary Rules](#boundary-rules)
+- [Adding a New Feature](#adding-a-new-feature)
+- [How to Import Correctly](#how-to-import-correctly)
+- [Navigation](#navigation)
+- [Testing](#testing)
+- [Publishing as an npm Template](#publishing-as-an-npm-template)
+- [Troubleshooting](#troubleshooting)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+---
 
-```sh
-# Using npm
-npm start
+## Installation
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+Use the React Native CLI to scaffold a new project from this template:
 
 ```sh
-bundle install
+npx @react-native-community/cli init MyApp --template RnFeatureBoundary
 ```
 
-Then, and every time you update your native dependencies, run:
+---
+
+## Architecture Overview
+
+```
+src/
+├── features/          # Business domains (home, user, profile, settings, ...)
+│   ├── home/
+│   │   ├── __tests__/      # All tests for this feature
+│   │   ├── screens/        # Screens owned by this feature
+│   │   └── index.ts        # Public API: what other features may consume
+│   ├── user/
+│   │   ├── hooks/
+│   │   ├── types/
+│   │   └── index.ts
+│   ├── profile/
+│   │   ├── screens/
+│   │   └── index.ts
+│   └── settings/
+│       ├── screens/
+│       └── index.ts
+├── navigation/        # Router setup (empty by default; bring your own)
+└── shared/            # Reusable UI / utilities (no barrel file)
+    ├── components/
+    └── types/
+```
+
+- **`src/features/<name>/index.ts`** is the **only** contract other code may use.
+- **`src/shared/`** can be imported from anywhere, including `App.tsx`.
+- **`src/navigation/`** is left empty so you can install any navigation solution.
+
+---
+
+## Boundary Rules
+
+ESLint (`eslint-plugin-boundaries`) enforces the following import constraints:
+
+| From                                   | Can import                                                       |
+| -------------------------------------- | ---------------------------------------------------------------- |
+| Any file in `src/`                     | `shared`, `navigation`                                           |
+| `navigation`                           | `feature-public` (screens via `index.ts`)                        |
+| `feature-internal` (same feature)      | `feature-internal` (same feature)                                |
+| `feature-internal` (different feature) | `feature-public` only                                            |
+| `feature-public`                       | `feature-internal` (own feature), `feature-public` (any feature) |
+
+**Root files** (`App.tsx`, `index.js`, etc.) are outside the boundary model and can import anything freely.
+
+---
+
+## Adding a New Feature
+
+1. Create the folder:
+
+   ```sh
+   mkdir src/features/myFeature
+   ```
+
+2. Add internal files (screens, hooks, types, etc.):
+
+   ```sh
+   mkdir src/features/myFeature/screens
+   touch src/features/myFeature/screens/MyFeatureScreen.tsx
+   ```
+
+3. Create the public API:
+
+   ```ts
+   // src/features/myFeature/index.ts
+   export { MyFeatureScreen } from './screens/MyFeatureScreen';
+   ```
+
+4. (Optional) Add tests:
+   ```sh
+   mkdir src/features/myFeature/__tests__
+   touch src/features/myFeature/__tests__/MyFeatureScreen.test.tsx
+   ```
+
+---
+
+## How to Import Correctly
+
+### Valid
+
+```ts
+// From a screen inside 'profile' -> user public API
+import { User } from '../../user';
+
+// From navigation -> feature public API
+import { HomeScreen } from '../features/home';
+
+// From anywhere -> shared
+import { Container } from '../shared/components/Container';
+```
+
+### Invalid (will fail lint)
+
+```ts
+// Deep import into another feature
+import { useUser } from '../../user/hooks/useUser';
+
+// Deep import into another feature's types
+import { User } from '../../user/types/userTypes';
+```
+
+**ESLint error you will see:**
+
+> Architecture violation: features may depend on other features only through their public API. Feature "profile" cannot import internal files from feature "user". Replace the deep import with an import from `src/features/user/index.ts`.
+
+---
+
+## Navigation
+
+No navigation library is pre-installed. Install whichever you prefer and wire screens by importing them from the feature public APIs.
+
+See `src/navigation/README.md` for the golden rule.
+
+---
+
+## Testing
+
+Tests live inside each feature at `src/features/<name>/__tests__/`. There is no root `__tests__` folder.
+
+**Example:**
+
+```ts
+// src/features/home/__tests__/HomeScreen.test.tsx
+import React from 'react';
+import ReactTestRenderer from 'react-test-renderer';
+import { HomeScreen } from '..';
+
+describe('HomeScreen', () => {
+  it('renders correctly', () => {
+    ReactTestRenderer.create(
+      <HomeScreen safeAreaInsets={{ top: 0, bottom: 0, left: 0, right: 0 }} />,
+    );
+  });
+});
+```
+
+Run all tests:
 
 ```sh
-bundle exec pod install
+npm test
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+---
+
+## Publishing as an npm Template
+
+To make the template installable via `npx @react-native-community/cli init MyApp --template RnFeatureBoundary`, you must publish it as an npm package.
+
+### Option A: Publish with the exact package name
+
+1. Rename the package in `package.json` to `RnFeatureBoundary`.
+2. Create a `template/` directory at the repo root.
+3. Move **all project source files** (everything except docs and packaging metadata) into `template/`.
+4. Create `template.config.js` at the repo root:
+   ```js
+   module.exports = {
+     placeholderName: 'RnFeatureBoundary',
+     templateDir: 'template',
+   };
+   ```
+5. Publish:
+   ```sh
+   npm publish
+   ```
+
+Users then run:
 
 ```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+npx @react-native-community/cli init MyApp --template RnFeatureBoundary
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### Option B: Use the `react-native-template-` prefix (legacy convention)
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+1. Rename the package in `package.json` to `react-native-template-feature-boundary`.
+2. Follow the same `template/` + `template.config.js` steps above.
+3. Publish:
+   ```sh
+   npm publish --access public
+   ```
 
-## Step 3: Modify your app
+Users then run:
 
-Now that you have successfully run the app, let's make changes!
+```sh
+npx @react-native-community/cli init MyApp --template feature-boundary
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+### Important
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+Do **not** publish from this flat repo structure directly. The React Native CLI expects either a `template/` subdirectory or a `template.config.js` pointing to the correct directory.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+---
 
-## Congratulations! :tada:
+## Troubleshooting
 
-You've successfully run and modified your React Native App. :partying_face:
+**Q: ESLint shows `boundaries/no-unknown` for a new file I created.**  
+A: Make sure the file sits inside one of the recognized folders:
 
-### Now what?
+- `src/features/<name>/` for features
+- `src/shared/` for shared code
+- `src/navigation/` for navigation setup
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+Files outside `src/` or in unlisted folders inside `src/` are treated as unknown by the boundary plugin. if its a new folder you can add it in the `eslint.config.mjs` under setting in boundaries/elements array
 
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+**Q: Can I add path aliases (e.g. `@/features/home`)?**  
+A: Yes, but the template intentionally avoids them to keep compatibility high. If you add aliases, you must also configure `babel-plugin-module-resolver` and ensure the ESLint `import/resolver` understands them so that `eslint-plugin-boundaries` still classifies files correctly.
