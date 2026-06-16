@@ -24,7 +24,7 @@ A **React Native CLI template** that enforces a strict **feature-based architect
 Use the React Native CLI to scaffold a new project from this template:
 
 ```sh
-npx @react-native-community/cli init MyApp --template RnFeatureBoundary
+npx @react-native-community/cli init MyApp --template feature-boundary
 ```
 
 ---
