@@ -172,6 +172,13 @@ Run all tests:
 npm test
 ```
 
+## Note
+
+- On every commit, **Prettier** and **ESLint** checks are run automatically. If they fail, the commit is blocked.
+- On every push, the test suite is run automatically. If any test fails, the push is blocked.
+
+Only commits and pushes that pass all configured checks are allowed to proceed.
+
 ---
 
 ## Publishing as an npm Template
