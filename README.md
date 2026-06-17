@@ -1,5 +1,11 @@
 # RnFeatureBoundary
 
+> The recommended way to use this template is via the React Native CLI:
+>
+> ```sh
+> npx @react-native-community/cli init MyApp --template feature-boundary
+> ```
+
 A **React Native CLI template** that enforces a strict **feature-based architecture** through ESLint rules. Every feature is self-contained under `src/features/<name>/` and exposes a public API via `index.ts`. Other features, shared code, and navigation can only interact through these public boundaries.
 
 ---
@@ -14,7 +20,6 @@ A **React Native CLI template** that enforces a strict **feature-based architect
 - [How to Import Correctly](#how-to-import-correctly)
 - [Navigation](#navigation)
 - [Testing](#testing)
-- [Publishing as an npm Template](#publishing-as-an-npm-template)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -24,8 +29,10 @@ A **React Native CLI template** that enforces a strict **feature-based architect
 Use the React Native CLI to scaffold a new project from this template:
 
 ```sh
-npx @react-native-community/cli init MyApp --template RnFeatureBoundary
+npx @react-native-community/cli init MyApp --template feature-boundary
 ```
+
+> **Note:** After generating your project, the Android application ID (`com.rnfeatureboundary`) and iOS bundle identifier are not automatically renamed. To fully rebrand before publishing, use a tool like [`react-native-rename`](https://github.com/junedomingo/react-native-rename) or update the native files manually.
 
 ---
 
@@ -181,57 +188,9 @@ Only commits and pushes that pass all configured checks are allowed to proceed.
 
 ---
 
-## Publishing as an npm Template
-
-To make the template installable via `npx @react-native-community/cli init MyApp --template RnFeatureBoundary`, you must publish it as an npm package.
-
-### Option A: Publish with the exact package name
-
-1. Rename the package in `package.json` to `RnFeatureBoundary`.
-2. Create a `template/` directory at the repo root.
-3. Move **all project source files** (everything except docs and packaging metadata) into `template/`.
-4. Create `template.config.js` at the repo root:
-   ```js
-   module.exports = {
-     placeholderName: 'RnFeatureBoundary',
-     templateDir: 'template',
-   };
-   ```
-5. Publish:
-   ```sh
-   npm publish
-   ```
-
-Users then run:
-
-```sh
-npx @react-native-community/cli init MyApp --template RnFeatureBoundary
-```
-
-### Option B: Use the `react-native-template-` prefix (legacy convention)
-
-1. Rename the package in `package.json` to `react-native-template-feature-boundary`.
-2. Follow the same `template/` + `template.config.js` steps above.
-3. Publish:
-   ```sh
-   npm publish --access public
-   ```
-
-Users then run:
-
-```sh
-npx @react-native-community/cli init MyApp --template feature-boundary
-```
-
-### Important
-
-Do **not** publish from this flat repo structure directly. The React Native CLI expects either a `template/` subdirectory or a `template.config.js` pointing to the correct directory.
-
----
-
 ## Troubleshooting
 
-**Q: ESLint shows `boundaries/no-unknown` for a new file I created.**  
+**Q: ESLint shows `boundaries/no-unknown` for a new file I created.**
 A: Make sure the file sits inside one of the recognized folders:
 
 - `src/features/<name>/` for features
@@ -240,5 +199,5 @@ A: Make sure the file sits inside one of the recognized folders:
 
 Files outside `src/` or in unlisted folders inside `src/` are treated as unknown by the boundary plugin. if its a new folder you can add it in the `eslint.config.mjs` under setting in boundaries/elements array
 
-**Q: Can I add path aliases (e.g. `@/features/home`)?**  
+**Q: Can I add path aliases (e.g. `@/features/home`)?**
 A: Yes, but the template intentionally avoids them to keep compatibility high. If you add aliases, you must also configure `babel-plugin-module-resolver` and ensure the ESLint `import/resolver` understands them so that `eslint-plugin-boundaries` still classifies files correctly.

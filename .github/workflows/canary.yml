@@ -1,0 +1,63 @@
+name: Monthly Canary
+
+on:
+  schedule:
+    # First day of every month at 00:00 UTC
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install React Native CLI
+        run: npm install -g @react-native-community/cli
+
+      - name: Generate project from published template
+        run: npx @react-native-community/cli init TestApp --template feature-boundary
+
+      - name: Verify Android structure
+        run: |
+          echo "Checking Android package rename..."
+          if [ ! -f "TestApp/android/app/src/main/java/com/testapp/MainActivity.kt" ]; then
+            echo "❌ Android MainActivity not found at expected path"
+            find TestApp/android -name "MainActivity.kt" -o -name "MainActivity.java"
+            exit 1
+          fi
+          echo "✅ Android structure verified"
+        shell: bash
+
+      - name: Verify iOS structure
+        run: |
+          echo "Checking iOS app directory rename..."
+          if [ ! -d "TestApp/ios/TestApp" ]; then
+            echo "❌ iOS app directory not renamed correctly"
+            ls -la TestApp/ios/
+            exit 1
+          fi
+          echo "✅ iOS structure verified"
+        shell: bash
+
+      - name: Verify post-init script self-destructed
+        run: |
+          if [ -f "TestApp/scripts/postInit.js" ]; then
+            echo "❌ postInit.js was not cleaned up after run"
+            exit 1
+          fi
+          echo "✅ post-init script cleaned up"
+        shell: bash
+
+      - name: Install dependencies
+        run: |
+          cd TestApp
+          npm install
+
+      - name: Run lint
+        run: |
+          cd TestApp
+          npm run lint
