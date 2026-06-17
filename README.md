@@ -32,8 +32,6 @@ Use the React Native CLI to scaffold a new project from this template:
 npx @react-native-community/cli init MyApp --template feature-boundary
 ```
 
-> **Note:** After generating your project, the Android application ID (`com.rnfeatureboundary`) and iOS bundle identifier are not automatically renamed. To fully rebrand before publishing, use a tool like [`react-native-rename`](https://github.com/junedomingo/react-native-rename) or update the native files manually.
-
 ---
 
 ## Architecture Overview
@@ -102,7 +100,7 @@ ESLint (`eslint-plugin-boundaries`) enforces the following import constraints:
 
    ```ts
    // src/features/myFeature/index.ts
-   export { MyFeatureScreen } from './screens/MyFeatureScreen';
+   export { MyFeatureScreen } from "./screens/MyFeatureScreen";
    ```
 
 4. (Optional) Add tests:
@@ -119,23 +117,23 @@ ESLint (`eslint-plugin-boundaries`) enforces the following import constraints:
 
 ```ts
 // From a screen inside 'profile' -> user public API
-import { User } from '../../user';
+import { User } from "../../user";
 
 // From navigation -> feature public API
-import { HomeScreen } from '../features/home';
+import { HomeScreen } from "../features/home";
 
 // From anywhere -> shared
-import { Container } from '../shared/components/Container';
+import { Container } from "../shared/components/Container";
 ```
 
 ### Invalid (will fail lint)
 
 ```ts
 // Deep import into another feature
-import { useUser } from '../../user/hooks/useUser';
+import { useUser } from "../../user/hooks/useUser";
 
 // Deep import into another feature's types
-import { User } from '../../user/types/userTypes';
+import { User } from "../../user/types/userTypes";
 ```
 
 **ESLint error you will see:**
@@ -160,12 +158,12 @@ Tests live inside each feature at `src/features/<name>/__tests__/`. There is no 
 
 ```ts
 // src/features/home/__tests__/HomeScreen.test.tsx
-import React from 'react';
-import ReactTestRenderer from 'react-test-renderer';
-import { HomeScreen } from '..';
+import React from "react";
+import ReactTestRenderer from "react-test-renderer";
+import { HomeScreen } from "..";
 
-describe('HomeScreen', () => {
-  it('renders correctly', () => {
+describe("HomeScreen", () => {
+  it("renders correctly", () => {
     ReactTestRenderer.create(
       <HomeScreen safeAreaInsets={{ top: 0, bottom: 0, left: 0, right: 0 }} />,
     );
