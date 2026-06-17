@@ -2,6 +2,11 @@
 const fs = require('fs');
 const path = require('path');
 
+process.on('SIGINT', () => {
+  console.log('\n[postInit] Process interrupted by user. No further changes were applied.');
+  process.exit(0);
+});
+
 const PLACEHOLDER_NAME = 'RnFeatureBoundary';
 const cwd = process.cwd();
 const appJsonPath = path.join(cwd, 'app.json');
@@ -147,22 +152,6 @@ function renameIos() {
   }
 }
 
-function selfDestruct() {
-  try {
-    const scriptFile = __filename;
-    const scriptDir = path.dirname(scriptFile);
-    if (fs.existsSync(scriptFile)) {
-      fs.unlinkSync(scriptFile);
-    }
-    if (fs.existsSync(scriptDir) && fs.readdirSync(scriptDir).length === 0) {
-      fs.rmdirSync(scriptDir);
-    }
-    log('Cleaned up post-init script.');
-  } catch (e) {
-    /* ignore cleanup errors */
-  }
-}
-
 // Execute
 try {
   renameAndroidPackage();
@@ -176,4 +165,4 @@ try {
   warn(`iOS rename error: ${e.message}`);
 }
 
-selfDestruct();
+log('Done.');

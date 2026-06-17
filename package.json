@@ -5,6 +5,7 @@
   "files": [
     "template",
     "template.config.js",
+    "scripts",
     "README.md"
   ],
   "keywords": [
