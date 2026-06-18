@@ -11,6 +11,9 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v4
 
+      - name: Ensure postInit script is executable
+        run: chmod +x scripts/postInit.js
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
