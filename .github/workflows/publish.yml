@@ -22,8 +22,10 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Configure npm registry
-        run: npm config set registry https://registry.npmjs.org/
+      - name: Clean npm config for OIDC
+        run: |
+          rm -f ~/.npmrc
+          npm config set registry https://registry.npmjs.org/
 
       - name: Configure git
         run: |
