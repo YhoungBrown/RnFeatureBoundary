@@ -11,16 +11,19 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v4
 
+      - name: Ensure postInit script is executable
+        run: chmod +x scripts/postInit.js
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Install React Native CLI
         run: npm install -g @react-native-community/cli
 
       - name: Generate test project from local template
-        run: npx @react-native-community/cli init TestApp --template file:./
+        run: npx @react-native-community/cli init TestApp --template "file:${{ github.workspace }}"
 
       - name: Verify Android structure
         run: |

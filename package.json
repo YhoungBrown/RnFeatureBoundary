@@ -15,6 +15,7 @@
     "architecture",
     "cli",
     "eslint",
+    "husky",
     "boundaries"
   ],
   "license": "MIT",

@@ -32,6 +32,12 @@ Use the React Native CLI to scaffold a new project from this template:
 npx @react-native-community/cli init MyApp --template feature-boundary
 ```
 
+> **Tip:** You can pin the CLI version if needed:
+>
+> ```sh
+> npx @react-native-community/cli@latest init MyApp --template feature-boundary
+> ```
+
 ---
 
 ## Architecture Overview
@@ -108,6 +114,22 @@ ESLint (`eslint-plugin-boundaries`) enforces the following import constraints:
    mkdir src/features/myFeature/__tests__
    touch src/features/myFeature/__tests__/MyFeatureScreen.test.tsx
    ```
+
+---
+
+## Cleaning Up Demo Features
+
+This template ships with sample features (`home`, `user`, `profile`, `settings`) to demonstrate the boundary architecture. Once you are ready to build your own features, run:
+
+```sh
+npm run cleanup
+```
+
+This will remove the demo folders and reset `App.tsx` to a minimal placeholder.
+
+> **Why this matters:** `App.tsx` is outside the `src/` boundary rules and will not be architecture-checked. Do not write your app logic directly in `App.tsx`. Create features under `src/features/<name>/` and import them here.
+
+> ⚠️ **Warning:** If you have modified files inside `src/features/home/`, `user/`, `profile/`, or `settings/`, those changes will be lost. The script asks for confirmation before deleting anything.
 
 ---
 
