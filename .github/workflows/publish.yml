@@ -49,8 +49,8 @@ jobs:
         run: echo "name=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
         shell: bash
 
-      - name: Remove conflicting auth config
-        run: npm config delete //registry.npmjs.org/:_authToken || true
+      - name: Strip conflicting auth config from npmrc
+        run: sed -i '/\/\/registry.npmjs.org\/:_authToken/d' ~/.npmrc
 
       - name: Publish to npm
         run: npm publish --provenance
