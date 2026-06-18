@@ -21,7 +21,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+
+      - name: Configure npm registry
+        run: npm config set registry https://registry.npmjs.org/
 
       - name: Configure git
         run: |
@@ -48,9 +50,6 @@ jobs:
         id: tag
         run: echo "name=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
         shell: bash
-
-      - name: Strip conflicting auth config from npmrc
-        run: sed -i '/\/\/registry.npmjs.org\/:_authToken/d' ~/.npmrc
 
       - name: Publish to npm
         run: npm publish --provenance
