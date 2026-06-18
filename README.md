@@ -33,6 +33,7 @@ npx @react-native-community/cli init MyApp --template feature-boundary
 ```
 
 > **Tip:** You can pin the CLI version if needed:
+>
 > ```sh
 > npx @react-native-community/cli@latest init MyApp --template feature-boundary
 > ```
