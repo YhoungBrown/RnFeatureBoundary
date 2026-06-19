@@ -1,74 +1,74 @@
-name: Publish to npm
+name: Publish
 
 on:
-push:
-  branches:
-    - main
+  push:
+    branches:
+      - main
 
 permissions:
-contents: write
-id-token: write
+  contents: write
+  id-token: write
 
 jobs:
-publish:
-  runs-on: ubuntu-latest
+  publish:
+    runs-on: ubuntu-latest
 
-  steps:
-    - name: Checkout main
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        registry-url: "https://registry.npmjs.org"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
 
-    - name: Check versions
-      run: |
-        node -v
-        npm -v
+      - name: Check versions
+        run: |
+          node -v
+          npm -v
 
-    - name: OIDC Debug
-      run: |
-        echo "ID_TOKEN_URL=$ACTIONS_ID_TOKEN_REQUEST_URL"
-        echo "REPOSITORY=$GITHUB_REPOSITORY"
-        echo "WORKFLOW=$GITHUB_WORKFLOW"
+      - name: OIDC Debug
+        run: |
+          echo "ID_TOKEN_URL=$ACTIONS_ID_TOKEN_REQUEST_URL"
+          echo "REPOSITORY=$GITHUB_REPOSITORY"
+          echo "WORKFLOW=$GITHUB_WORKFLOW"
 
-    - name: Configure git
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Determine version bump
-      id: bump
-      run: |
-        MSG=$(git log -1 --pretty=%B)
+      - name: Determine version bump
+        id: bump
+        run: |
+          MSG=$(git log -1 --pretty=%B)
 
-        if echo "$MSG" | grep -q '\[major\]'; then
-          echo "type=major" >> $GITHUB_OUTPUT
-        elif echo "$MSG" | grep -q '\[minor\]'; then
-          echo "type=minor" >> $GITHUB_OUTPUT
-        else
-          echo "type=patch" >> $GITHUB_OUTPUT
-        fi
+          if echo "$MSG" | grep -q '\[major\]'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$MSG" | grep -q '\[minor\]'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
 
-    - name: Bump version and create tag
-      run: npm version ${{ steps.bump.outputs.type }}
+      - name: Bump version and create tag
+        run: npm version ${{ steps.bump.outputs.type }}
 
-    - name: Get new tag name
-      id: tag
-      run: echo "name=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+      - name: Get new tag name
+        id: tag
+        run: echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
 
-    - name: Publish to npm
-      run: npm publish --provenance --access public
+      - name: Publish to npm
+        run: npm publish --provenance --access public
 
-    - name: Push version bump and tag
-      run: git push --follow-tags
+      - name: Push version bump and tag
+        run: git push --follow-tags
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ steps.tag.outputs.name }}
-        generate_release_notes: true
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          generate_release_notes: true
