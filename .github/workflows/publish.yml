@@ -14,17 +14,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # -------------------------
-      # Checkout repo
-      # -------------------------
-      - name: Checkout main
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # -------------------------
-      # Setup Node (OIDC enabled)
-      # -------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -33,26 +27,17 @@ jobs:
           always-auth: true
           provenance: true
 
-      # -------------------------
-      # Debug environment
-      # -------------------------
       - name: Debug environment
         run: |
           node -v
           npm -v
           npm config get registry
 
-      # -------------------------
-      # Configure git
-      # -------------------------
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # -------------------------
-      # Determine version bump
-      # -------------------------
       - name: Determine version bump
         id: bump
         run: |
@@ -66,66 +51,27 @@ jobs:
             echo "type=patch" >> "$GITHUB_OUTPUT"
           fi
 
-      # -------------------------
-      # Bump version + tag
-      # -------------------------
-      - name: Bump version and create tag
+      - name: Bump version
         run: npm version ${{ steps.bump.outputs.type }} --no-git-tag-version
 
       - name: Commit version bump
         run: |
           git add package.json
-          git commit -m "chore: bump version [skip ci]" || echo "No changes"
+          git commit -m "chore: bump version [skip ci]" || echo "no changes"
 
-      - name: Get tag
-        id: tag
-        run: echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
-
-      # -------------------------
-      # Inspect package
-      # -------------------------
-      - name: Inspect package
-        run: cat package.json
-
-      # -------------------------
-      # npm diagnostics
-      # -------------------------
-      - name: npm diagnostics
-        run: |
-          npm config list
-          npm whoami || true
-
-      # -------------------------
-      # Verify version
-      # -------------------------
       - name: Verify version
         run: node -p "require('./package.json').version"
 
-      # -------------------------
-      # Dry run publish
-      # -------------------------
-      - name: npm publish dry run
-        run: npm publish --dry-run --provenance --access public
+      - name: Dry run publish
+        run: npm publish --dry-run --access public --provenance
 
       # -------------------------
-      # Publish (OIDC + fallback token)
+      # AUTH FIX (THIS IS THE KEY)
       # -------------------------
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public
+        run: npm publish --access public --provenance
 
-      # -------------------------
-      # Push version + tags
-      # -------------------------
-      - name: Push version bump and tags
+      - name: Push version + tags
         run: git push --follow-tags
-
-      # -------------------------
-      # GitHub release
-      # -------------------------
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.name }}
-          generate_release_notes: true
