@@ -1,102 +1,3 @@
-# name: Publish
-
-# on:
-#   push:
-#     branches:
-#       - main
-
-# permissions:
-#   contents: write
-#   id-token: write
-
-# jobs:
-#   publish:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Checkout main
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 22
-#           registry-url: https://registry.npmjs.org
-
-#       - name: Check versions
-#         run: |
-#           node -v
-#           npm -v
-
-#       - name: OIDC Debug
-#         run: |
-#           echo "ID_TOKEN_URL=$ACTIONS_ID_TOKEN_REQUEST_URL"
-#           echo "REPOSITORY=$GITHUB_REPOSITORY"
-#           echo "WORKFLOW=$GITHUB_WORKFLOW"
-
-#       - name: Configure git
-#         run: |
-#           git config user.name "github-actions[bot]"
-#           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-#       - name: Determine version bump
-#         id: bump
-#         run: |
-#           MSG=$(git log -1 --pretty=%B)
-
-#           if echo "$MSG" | grep -q '\[major\]'; then
-#             echo "type=major" >> "$GITHUB_OUTPUT"
-#           elif echo "$MSG" | grep -q '\[minor\]'; then
-#             echo "type=minor" >> "$GITHUB_OUTPUT"
-#           else
-#             echo "type=patch" >> "$GITHUB_OUTPUT"
-#           fi
-
-#       # - name: Bump version and create tag
-#       #   run: npm version ${{ steps.bump.outputs.type }}
-
-#       # - name: Get new tag name
-#       #   id: tag
-#       #   run: echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
-
-#       - name: Inspect package
-#         run: |
-#           cat package.json
-
-#       - name: Show npm package info
-#         run: npm view react-native-template-feature-boundary version
-
-#       - name: npm identity diagnostics
-#   run: |
-#     npm config get registry
-#     npm whoami || true
-#     npm access ls-packages yhoungbrown || true
-
-#     - name: Inspect npm config
-#   run: |
-#     echo "===== .npmrc ====="
-#     cat ~/.npmrc || true
-#     echo ""
-#     echo "===== npm config ====="
-#     npm config list
-
-#     - name: npm publish dry run
-#   run: npm publish --provenance --access public --dry-run
-
-#     - name: Publish to npm
-#         run: npm publish --provenance --access public
-
-#       # - name: Push version bump and tag
-#       #   run: git push --follow-tags
-
-#       # - name: Create GitHub Release
-#       #   uses: softprops/action-gh-release@v2
-#       #   with:
-#       #     tag_name: ${{ steps.tag.outputs.name }}
-#       #     generate_release_notes: true
-
 name: Publish
 
 on:
@@ -113,55 +14,118 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -------------------------
+      # Checkout repo
+      # -------------------------
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # -------------------------
+      # Setup Node (OIDC enabled)
+      # -------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+          always-auth: true
+          provenance: true
 
-      - name: Check versions
+      # -------------------------
+      # Debug environment
+      # -------------------------
+      - name: Debug environment
         run: |
           node -v
           npm -v
+          npm config get registry
 
-      - name: OIDC Debug
-        run: |
-          echo "ID_TOKEN_URL=$ACTIONS_ID_TOKEN_REQUEST_URL"
-          echo "REPOSITORY=$GITHUB_REPOSITORY"
-          echo "WORKFLOW=$GITHUB_WORKFLOW"
-
+      # -------------------------
+      # Configure git
+      # -------------------------
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      # -------------------------
+      # Determine version bump
+      # -------------------------
+      - name: Determine version bump
+        id: bump
+        run: |
+          MSG=$(git log -1 --pretty=%B)
+
+          if echo "$MSG" | grep -q '\[major\]'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$MSG" | grep -q '\[minor\]'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      # -------------------------
+      # Bump version + tag
+      # -------------------------
+      - name: Bump version and create tag
+        run: npm version ${{ steps.bump.outputs.type }} --no-git-tag-version
+
+      - name: Commit version bump
+        run: |
+          git add package.json
+          git commit -m "chore: bump version [skip ci]" || echo "No changes"
+
+      - name: Get tag
+        id: tag
+        run: echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+
+      # -------------------------
+      # Inspect package
+      # -------------------------
       - name: Inspect package
         run: cat package.json
 
-      - name: Show npm package info
-        run: npm view react-native-template-feature-boundary version
-
-      - name: npm identity diagnostics
+      # -------------------------
+      # npm diagnostics
+      # -------------------------
+      - name: npm diagnostics
         run: |
-          npm config get registry
-          npm whoami || true
-          npm access ls-packages yhoungbrown || true
-
-      - name: Inspect npm config
-        run: |
-          echo "===== .npmrc ====="
-          cat ~/.npmrc || true
-          echo ""
-          echo "===== npm config ====="
           npm config list
+          npm whoami || true
 
+      # -------------------------
+      # Verify version
+      # -------------------------
+      - name: Verify version
+        run: node -p "require('./package.json').version"
+
+      # -------------------------
+      # Dry run publish
+      # -------------------------
       - name: npm publish dry run
-        run: npm publish --provenance --access public --dry-run
+        run: npm publish --dry-run --provenance --access public
 
+      # -------------------------
+      # Publish (OIDC + fallback token)
+      # -------------------------
       - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
+
+      # -------------------------
+      # Push version + tags
+      # -------------------------
+      - name: Push version bump and tags
+        run: git push --follow-tags
+
+      # -------------------------
+      # GitHub release
+      # -------------------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          generate_release_notes: true
