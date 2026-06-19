@@ -54,21 +54,28 @@ jobs:
             echo "type=patch" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Bump version and create tag
-        run: npm version ${{ steps.bump.outputs.type }}
+      # - name: Bump version and create tag
+      #   run: npm version ${{ steps.bump.outputs.type }}
 
-      - name: Get new tag name
-        id: tag
-        run: echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+      # - name: Get new tag name
+      #   id: tag
+      #   run: echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+
+      - name: Inspect package
+        run: |
+          cat package.json
+
+      - name: Show npm package info
+        run: npm view react-native-template-feature-boundary version
 
       - name: Publish to npm
         run: npm publish --provenance --access public
 
-      - name: Push version bump and tag
-        run: git push --follow-tags
+      # - name: Push version bump and tag
+      #   run: git push --follow-tags
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.name }}
-          generate_release_notes: true
+      # - name: Create GitHub Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: ${{ steps.tag.outputs.name }}
+      #     generate_release_notes: true
