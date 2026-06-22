@@ -217,7 +217,7 @@ A: Make sure the file sits inside one of the recognized folders:
 - `src/shared/` for shared code
 - `src/navigation/` for navigation setup
 
-Files outside `src/` or in unlisted folders inside `src/` are treated as unknown by the boundary plugin. if its a new folder you can add it in the `eslint.config.mjs` under setting in boundaries/elements array
+Files outside `src/` or in unlisted folders inside `src/` are treated as unknown by the boundary plugin. if its a new folder you can add it in the `eslint.config.mjs` under setting in boundaries/elements array.
 
 **Q: Can I add path aliases (e.g. `@/features/home`)?**
 A: Yes, but the template intentionally avoids them to keep compatibility high. If you add aliases, you must also configure `babel-plugin-module-resolver` and ensure the ESLint `import/resolver` understands them so that `eslint-plugin-boundaries` still classifies files correctly.
