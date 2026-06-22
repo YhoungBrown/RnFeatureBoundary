@@ -3,7 +3,7 @@
 > The recommended way to use this template is via the React Native CLI:
 >
 > ```sh
-> npx @react-native-community/cli init MyApp --template feature-boundary
+> npx @react-native-community/cli init MyApp --template react-native-template-feature-boundary
 > ```
 
 A **React Native CLI template** that enforces a strict **feature-based architecture** through ESLint rules. Every feature is self-contained under `src/features/<name>/` and exposes a public API via `index.ts`. Other features, shared code, and navigation can only interact through these public boundaries.
@@ -29,7 +29,7 @@ A **React Native CLI template** that enforces a strict **feature-based architect
 Use the React Native CLI to scaffold a new project from this template:
 
 ```sh
-npx @react-native-community/cli init MyApp --template feature-boundary
+npx @react-native-community/cli init MyApp --template react-native-template-feature-boundary
 ```
 
 > **Tip:** You can pin the CLI version if needed:
