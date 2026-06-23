@@ -3,7 +3,7 @@ name: Monthly Canary
 on:
   schedule:
     # First day of every month at 00:00 UTC
-    - cron: '0 0 1 * *'
+    - cron: "0 0 1 * *"
   workflow_dispatch:
 
 jobs:
@@ -19,13 +19,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Install React Native CLI
         run: npm install -g @react-native-community/cli
 
       - name: Generate project from published template
-        run: npx @react-native-community/cli init TestApp --template feature-boundary
+        run: npx @react-native-community/cli init MyApp --template react-native-template-feature-boundary
 
       - name: Verify Android structure
         run: |
