@@ -152,6 +152,16 @@ function renameIos() {
   }
 }
 
+function renameGitignore() {
+  log('Checking for _gitignore...');
+  const oldPath = path.join(cwd, '_gitignore');
+  const newPath = path.join(cwd, '.gitignore');
+  if (fs.existsSync(oldPath)) {
+    fs.renameSync(oldPath, newPath);
+    log('Renamed _gitignore to .gitignore');
+  }
+}
+
 // Execute
 try {
   renameAndroidPackage();
@@ -163,6 +173,12 @@ try {
   renameIos();
 } catch (e) {
   warn(`iOS rename error: ${e.message}`);
+}
+
+try {
+  renameGitignore();
+} catch (e) {
+  warn(`Gitignore rename error: ${e.message}`);
 }
 
 log('Done.');
