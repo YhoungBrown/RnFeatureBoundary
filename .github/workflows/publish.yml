@@ -27,9 +27,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Configure npm registry
-        run: npm config set registry https://registry.npmjs.org/
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Determine version bump from labels
         id: bump
