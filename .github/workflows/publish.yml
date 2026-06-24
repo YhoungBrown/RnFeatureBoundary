@@ -1,77 +1,100 @@
 name: Publish
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
-      - main
+      - fix/publish-oidc
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
   publish:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      # -------------------------
+      # Checkout repo
+      # -------------------------
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
+      # -------------------------
+      # Setup Node (OIDC)
+      # -------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-          always-auth: true
           provenance: true
 
-      - name: Debug environment
-        run: |
-          node -v
-          npm -v
-          npm config get registry
-
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Determine version bump
+      # -------------------------
+      # Determine version bump from PR labels
+      # -------------------------
+      - name: Determine version bump from labels
         id: bump
         run: |
-          MSG=$(git log -1 --pretty=%B)
+          LABELS="${{ toJson(github.event.pull_request.labels) }}"
 
-          if echo "$MSG" | grep -q '\[major\]'; then
+          echo "Labels: $LABELS"
+
+          if echo "$LABELS" | grep -q "major"; then
             echo "type=major" >> "$GITHUB_OUTPUT"
-          elif echo "$MSG" | grep -q '\[minor\]'; then
+          elif echo "$LABELS" | grep -q "minor"; then
             echo "type=minor" >> "$GITHUB_OUTPUT"
           else
             echo "type=patch" >> "$GITHUB_OUTPUT"
           fi
 
+      # -------------------------
+      # Git config
+      # -------------------------
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # -------------------------
+      # Bump version
+      # -------------------------
       - name: Bump version
         run: npm version ${{ steps.bump.outputs.type }} --no-git-tag-version
 
+      # -------------------------
+      # Commit version bump (ADDED STEP)
+      # -------------------------
       - name: Commit version bump
         run: |
           git add package.json
           git commit -m "chore: bump version [skip ci]" || echo "no changes"
 
+      # -------------------------
+      # Verify version
+      # -------------------------
       - name: Verify version
         run: node -p "require('./package.json').version"
 
+      # -------------------------
+      # Dry run publish
+      # -------------------------
       - name: Dry run publish
         run: npm publish --dry-run --access public --provenance
 
       # -------------------------
-      # AUTH FIX (THIS IS THE KEY)
+      # Publish to npm (OIDC)
       # -------------------------
       - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public --provenance
 
-      - name: Push version + tags
-        run: git push --follow-tags
+      # -------------------------
+      # Push changes back to repo
+      # -------------------------
+      - name: Push version bump
+        run: git push origin main
