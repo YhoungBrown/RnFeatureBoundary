@@ -4,10 +4,10 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - fix/publish-oidc
+      - main
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -16,35 +16,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # -------------------------
-      # Checkout repo
-      # -------------------------
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # -------------------------
-      # Setup Node (OIDC)
-      # -------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
-          provenance: true
+          node-version: "22"
 
-      # -------------------------
-      # Determine version bump from PR labels
-      # -------------------------
+      - name: Configure npm registry
+        run: npm config set registry https://registry.npmjs.org/
+
       - name: Determine version bump from labels
         id: bump
         run: |
           LABELS="${{ toJson(github.event.pull_request.labels) }}"
-
           echo "Labels: $LABELS"
-
           if echo "$LABELS" | grep -q "major"; then
             echo "type=major" >> "$GITHUB_OUTPUT"
           elif echo "$LABELS" | grep -q "minor"; then
@@ -53,48 +44,57 @@ jobs:
             echo "type=patch" >> "$GITHUB_OUTPUT"
           fi
 
-      # -------------------------
-      # Git config
-      # -------------------------
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # -------------------------
-      # Bump version
-      # -------------------------
-      - name: Bump version
-        run: npm version ${{ steps.bump.outputs.type }} --no-git-tag-version
+      - name: Bump version with collision guard
+        run: |
+          TYPE="${{ steps.bump.outputs.type }}"
+          NAME=$(node -p "require('./package.json').name")
+          CURRENT=$(node -p "require('./package.json').version")
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT" | cut -d. -f3)
 
-      # -------------------------
-      # Commit version bump (ADDED STEP)
-      # -------------------------
+          if [ "$TYPE" = "major" ]; then
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+          elif [ "$TYPE" = "minor" ]; then
+            MINOR=$((MINOR + 1)); PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEXT="$MAJOR.$MINOR.$PATCH"
+
+          while npm view "$NAME@$NEXT" version &>/dev/null; do
+            if [ "$TYPE" = "major" ]; then
+              MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+            elif [ "$TYPE" = "minor" ]; then
+              MINOR=$((MINOR + 1)); PATCH=0
+            else
+              PATCH=$((PATCH + 1))
+            fi
+            NEXT="$MAJOR.$MINOR.$PATCH"
+          done
+
+          echo "Publishing $NEXT"
+          npm version "$NEXT" --no-git-tag-version
+
       - name: Commit version bump
         run: |
           git add package.json
           git commit -m "chore: bump version [skip ci]" || echo "no changes"
 
-      # -------------------------
-      # Verify version
-      # -------------------------
       - name: Verify version
         run: node -p "require('./package.json').version"
 
-      # -------------------------
-      # Dry run publish
-      # -------------------------
       - name: Dry run publish
         run: npm publish --dry-run --access public --provenance
 
-      # -------------------------
-      # Publish to npm (OIDC)
-      # -------------------------
       - name: Publish to npm
         run: npm publish --access public --provenance
 
-      # -------------------------
-      # Push changes back to repo
-      # -------------------------
       - name: Push version bump
         run: git push origin main
