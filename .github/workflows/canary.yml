@@ -25,7 +25,7 @@ jobs:
         run: npm install -g @react-native-community/cli
 
       - name: Generate project from published template
-        run: npx @react-native-community/cli init MyApp --template react-native-template-feature-boundary
+        run: npx @react-native-community/cli init TestApp --template react-native-template-feature-boundary
 
       - name: Verify Android structure
         run: |
